@@ -8,6 +8,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
+import java.util.Date;
+
 public class Main {
     public static void main(String[] args) {
         // 📌 Création de l'EntityManager
@@ -38,8 +40,15 @@ public class Main {
             );
             System.out.println("✅ Préposé ajouté avec succès : " + prepose);
 
+            // 🔥 TEST : Emprunter un document avec des ID inexistants !
+            try {
+                bibliothequeService.emprunterDocument(999L, 888L, new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000));
+            } catch (Exception e) {
+                System.err.println("❌ Erreur : " + e.getMessage());
+            }
+
         } catch (Exception e) {
-            System.err.println("❌ Erreur : " + e.getMessage());
+            System.err.println("❌ Erreur générale : " + e.getMessage());
             e.printStackTrace();
         } finally {
             // 📌 Fermeture des ressources

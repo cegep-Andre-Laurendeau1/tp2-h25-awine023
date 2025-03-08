@@ -11,7 +11,8 @@ import java.util.stream.Collectors;
 
 public class BibliothequeService {
     private final LivreDAO livreDAO;
-
+    private final EmpruntDAO empruntDAO;
+    private final EmpruntDetailDAO empruntDetailDAO;
     private final UtilisateurDAO utilisateurDAO;
     private final EntityManager em;
 
@@ -19,10 +20,13 @@ public class BibliothequeService {
         this.em = em;
         this.livreDAO = new LivreDAO(em);
 
+
+        this.empruntDAO = new EmpruntDAO(em);
+        this.empruntDetailDAO = new EmpruntDetailDAO(em);
+
         this.utilisateurDAO = new UtilisateurDAO(em);
     }
 
-    // 📌 Ajouter un livre
     public LivreDTO ajouterLivre(String titre, String auteur, String ISBN, int nombrePages, int nbExemplaires) {
         EntityTransaction tx = em.getTransaction();
         tx.begin();
@@ -49,7 +53,7 @@ public class BibliothequeService {
             Emprunteur emprunteur = new Emprunteur(name, email, phoneNumber);
             em.persist(emprunteur);
             tx.commit();
-            return EmprunteurDTO.fromEntity(emprunteur);
+            return EmprunteurDTO.fromEntity(emprunteur); // ✅ Correction ici
         } catch (Exception e) {
             tx.rollback();
             throw new RuntimeException("Erreur lors de l'ajout de l'emprunteur : " + e.getMessage());
@@ -63,7 +67,7 @@ public class BibliothequeService {
             Prepose prepose = new Prepose(name, email, phoneNumber);
             em.persist(prepose);
             tx.commit();
-            return PreposeDTO.fromEntity(prepose);
+            return PreposeDTO.fromEntity(prepose); // ✅ Correction ici
         } catch (Exception e) {
             tx.rollback();
             throw new RuntimeException("Erreur lors de l'ajout du préposé : " + e.getMessage());
@@ -71,14 +75,114 @@ public class BibliothequeService {
     }
 
 
+    public EmpruntDTO emprunterDocument(Long emprunteurId, Long documentId, Date dateRetourPrevue) {
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        try {
+            Emprunteur emprunteur = em.find(Emprunteur.class, emprunteurId);
+            Document document = em.find(Document.class, documentId);
+
+            if (document.getNombreExemplaires() <= 0) { // ⚠️ Si document est null, ici ça va planter
+                tx.rollback();
+                throw new RuntimeException("Emprunt impossible : Plus d'exemplaires disponibles.");
+            }
+
+            Emprunt emprunt = new Emprunt();
+            emprunt.setDateEmprunt(new Date());
+            emprunt.setStatus("En cours");
+            emprunt.setEmprunteur(emprunteur);
+            empruntDAO.save(emprunt);
+
+            EmpruntDetail detail = new EmpruntDetail();
+            detail.setEmprunt(emprunt);
+            detail.setDocument(document); // ⚠️ Si document est null, ça va planter ici
+            detail.setDateRetourPrevue(dateRetourPrevue);
+            detail.setStatus("Non retourné");
+            empruntDetailDAO.save(detail);
+
+            tx.commit();
+            return EmpruntDTO.builder()
+                    .id(emprunt.getBorrowID())
+                    .dateEmprunt(emprunt.getDateEmprunt())
+                    .status(emprunt.getStatus())
+                    .emprunteur(EmprunteurDTO.fromEntity(emprunteur))
+                    .details(List.of(EmpruntDetailDTO.fromEntity(detail)))
+                    .build();
+        } catch (Exception e) {
+            tx.rollback();
+            throw new RuntimeException("Erreur lors de l'emprunt : " + e.getMessage());
+        }
+    }
+
+
+    public void retournerDocument(Long empruntDetailId) {
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        try {
+            EmpruntDetail detail = em.find(EmpruntDetail.class, empruntDetailId);
+
+            if (detail == null) {
+                tx.rollback();
+                throw new RuntimeException("Retour impossible : Détail de l'emprunt introuvable.");
+            }
+
+            detail.setDateRetourActuelle(new Date());
+            detail.setStatus("Retourné");
+            em.merge(detail);
+
+            Document document = detail.getDocument();
+            document.setNombreExemplaires(document.getNombreExemplaires() + 1);
+            em.merge(document);
+
+            Emprunt emprunt = detail.getEmprunt();
+            boolean tousRetournes = emprunt.getEmpruntDetails().stream()
+                    .allMatch(d -> d.getStatus().equals("Retourné"));
+
+            if (tousRetournes) {
+                emprunt.setStatus("Terminé");
+                em.merge(emprunt);
+            }
+
+            tx.commit();
+        } catch (Exception e) {
+            tx.rollback();
+            throw new RuntimeException("Erreur lors du retour du document : " + e.getMessage());
+        }
+    }
+
+
+    public List<EmpruntDTO> listerEmprunts() {
+        return empruntDAO.findAll().stream()
+                .map(emprunt -> EmpruntDTO.builder()
+                        .id(emprunt.getBorrowID())
+                        .dateEmprunt(emprunt.getDateEmprunt())
+                        .status(emprunt.getStatus())
+                        .emprunteur(convertirEnEmprunteurDTO(emprunt.getEmprunteur())) // ✅ Correction ici
+                        .details(emprunt.getEmpruntDetails().stream()
+                                .map(EmpruntDetailDTO::fromEntity)
+                                .collect(Collectors.toList()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    private EmprunteurDTO convertirEnEmprunteurDTO(Utilisateur utilisateur) {
+        if (utilisateur instanceof Emprunteur emprunteur) {
+            return EmprunteurDTO.fromEntity(emprunteur); // ✅ Convertir en DTO d'emprunteur
+        } else {
+            throw new RuntimeException("L'utilisateur associé à l'emprunt n'est pas un emprunteur !");
+        }
+    }
 
 
 
 
 
-
-
-
+    // 📌 Lister tous les livres disponibles
+    public List<LivreDTO> listerLivres() {
+        return livreDAO.findAll().stream()
+                .map(LivreDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
 
 
 
