@@ -1,6 +1,7 @@
 package ca.cal.tp2;
 
-import ca.cal.tp2.model.Livre;
+import ca.cal.tp2.dto.LivreDTO;
+import ca.cal.tp2.service.BibliothequeService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -10,22 +11,24 @@ public class Main {
         EntityManagerFactory emf = Persistence.createEntityManagerFactory("bibliothequePU");
         EntityManager em = emf.createEntityManager();
 
-        em.getTransaction().begin();
+        BibliothequeService bibliothequeService = new BibliothequeService(em);
 
-        // Création d'un livre
-        Livre livre = new Livre();
-        livre.setTitre("Le Petit Prince");
-        livre.setAuteur("Antoine de Saint-Exupéry");
-        livre.setISBN("123-ABC");
-        livre.setNombrePages(150);
-        livre.setNombreExemplaires(3);
+        try {
+            // Ajouter un livre via le service
+            LivreDTO livre = bibliothequeService.ajouterLivre(
+                    "Le Petit Prince", "Antoine de Saint-Exupéry", "123-ABC", 150, 3
+            );
 
-        em.persist(livre);
-        em.getTransaction().commit();
+            // Affichage du résultat
+            System.out.println("✅ Livre ajouté avec succès : " + livre);
 
-        System.out.println("📖 Livre ajouté avec succès : " + livre);
-
-        em.close();
-        emf.close();
+        } catch (Exception e) {
+            System.err.println("❌ Erreur : " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            // Fermeture des ressources
+            em.close();
+            emf.close();
+        }
     }
 }
