@@ -18,6 +18,7 @@ public class Prepose extends Utilisateur {
 
     public Prepose(String name, String email, String phoneNumber) {
         super(name, email, phoneNumber, "PREPOSE");
+    }
 
 
     public void entreNouveauDocument(Document document) {
