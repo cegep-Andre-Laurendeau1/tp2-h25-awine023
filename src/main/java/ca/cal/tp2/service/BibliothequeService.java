@@ -11,19 +11,22 @@ import java.util.stream.Collectors;
 
 public class BibliothequeService {
     private final LivreDAO livreDAO;
+    private final CDDAO cdDAO;
+    private final DVDDAO dvdDAO;
     private final EmpruntDAO empruntDAO;
     private final EmpruntDetailDAO empruntDetailDAO;
+    private final AmendeDAO amendeDAO;
     private final UtilisateurDAO utilisateurDAO;
     private final EntityManager em;
 
     public BibliothequeService(EntityManager em) {
         this.em = em;
         this.livreDAO = new LivreDAO(em);
-
-
+        this.cdDAO = new CDDAO(em);
+        this.dvdDAO = new DVDDAO(em);
         this.empruntDAO = new EmpruntDAO(em);
         this.empruntDetailDAO = new EmpruntDetailDAO(em);
-
+        this.amendeDAO = new AmendeDAO(em);
         this.utilisateurDAO = new UtilisateurDAO(em);
     }
 
@@ -53,7 +56,7 @@ public class BibliothequeService {
             Emprunteur emprunteur = new Emprunteur(name, email, phoneNumber);
             em.persist(emprunteur);
             tx.commit();
-            return EmprunteurDTO.fromEntity(emprunteur); // ✅ Correction ici
+            return EmprunteurDTO.fromEntity(emprunteur);
         } catch (Exception e) {
             tx.rollback();
             throw new RuntimeException("Erreur lors de l'ajout de l'emprunteur : " + e.getMessage());
@@ -161,13 +164,14 @@ public class BibliothequeService {
                         .id(emprunt.getBorrowID())
                         .dateEmprunt(emprunt.getDateEmprunt())
                         .status(emprunt.getStatus())
-                        .emprunteur(convertirEnEmprunteurDTO(emprunt.getEmprunteur())) // ✅ Correction ici
+                        .emprunteur(convertirEnEmprunteurDTO(emprunt.getEmprunteur()))
                         .details(emprunt.getEmpruntDetails().stream()
                                 .map(EmpruntDetailDTO::fromEntity)
                                 .collect(Collectors.toList()))
                         .build())
                 .collect(Collectors.toList());
     }
+
 
     private EmprunteurDTO convertirEnEmprunteurDTO(Utilisateur utilisateur) {
         if (utilisateur instanceof Emprunteur emprunteur) {
@@ -179,9 +183,13 @@ public class BibliothequeService {
 
 
 
+    public List<AmendeDTO> listerAmendesNonPayees() {
+        return amendeDAO.findAll().stream()
+                .filter(amende -> !amende.isStatus())
+                .map(AmendeDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
 
-
-    // 📌 Lister tous les livres disponibles
     public List<LivreDTO> listerLivres() {
         return livreDAO.findAll().stream()
                 .map(LivreDTO::fromEntity)
@@ -189,6 +197,23 @@ public class BibliothequeService {
     }
 
 
-
+    public CDDTO ajouterCD(String titre, String artiste, int duree, String genre, int nbExemplaires) {
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        try {
+            CD cd = new CD();
+            cd.setTitre(titre);
+            cd.setArtiste(artiste);
+            cd.setDuree(duree);
+            cd.setGenre(genre);
+            cd.setNombreExemplaires(nbExemplaires);
+            cdDAO.save(cd);
+            tx.commit();
+            return new CDDTO(cd.getDocumentID(), titre, artiste, duree, genre);
+        } catch (Exception e) {
+            tx.rollback();
+            throw new RuntimeException("Erreur lors de l'ajout du CD : " + e.getMessage());
+        }
+    }
 
 }
