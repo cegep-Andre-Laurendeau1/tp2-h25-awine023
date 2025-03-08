@@ -82,7 +82,12 @@ public class BibliothequeService {
             Emprunteur emprunteur = em.find(Emprunteur.class, emprunteurId);
             Document document = em.find(Document.class, documentId);
 
-            if (document.getNombreExemplaires() <= 0) { // ⚠️ Si document est null, ici ça va planter
+            if (emprunteur == null || document == null) {
+                tx.rollback();
+                throw new RuntimeException("Emprunt impossible : Emprunteur ou document introuvable.");
+            }
+
+            if (document.getNombreExemplaires() <= 0) {
                 tx.rollback();
                 throw new RuntimeException("Emprunt impossible : Plus d'exemplaires disponibles.");
             }
@@ -95,7 +100,7 @@ public class BibliothequeService {
 
             EmpruntDetail detail = new EmpruntDetail();
             detail.setEmprunt(emprunt);
-            detail.setDocument(document); // ⚠️ Si document est null, ça va planter ici
+            detail.setDocument(document);
             detail.setDateRetourPrevue(dateRetourPrevue);
             detail.setStatus("Non retourné");
             empruntDetailDAO.save(detail);
@@ -113,7 +118,6 @@ public class BibliothequeService {
             throw new RuntimeException("Erreur lors de l'emprunt : " + e.getMessage());
         }
     }
-
 
     public void retournerDocument(Long empruntDetailId) {
         EntityTransaction tx = em.getTransaction();
