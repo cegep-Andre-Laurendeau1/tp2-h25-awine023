@@ -30,7 +30,7 @@ public class BibliothequeService {
         this.utilisateurDAO = new UtilisateurDAO(em);
     }
 
-    public LivreDTO ajouterLivre(String titre, String auteur, String ISBN, int nombrePages, int nbExemplaires) {
+    public LivreDTO ajouterLivre(String titre, String auteur, String ISBN, int nombrePages, int nbExemplaires, String editeur) {
         EntityTransaction tx = em.getTransaction();
         tx.begin();
         try {
@@ -40,6 +40,7 @@ public class BibliothequeService {
             livre.setISBN(ISBN);
             livre.setNombrePages(nombrePages);
             livre.setNombreExemplaires(nbExemplaires);
+            livre.setEditeur(editeur);
             livreDAO.save(livre);
             tx.commit();
             return LivreDTO.fromEntity(livre);
@@ -215,5 +216,21 @@ public class BibliothequeService {
             throw new RuntimeException("Erreur lors de l'ajout du CD : " + e.getMessage());
         }
     }
+
+
+    public List<LivreDTO> rechercherLivresParTitreOuAuteur(String critere) {
+        return livreDAO.rechercherParTitreOuAuteur(critere).stream()
+                .map(LivreDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+
+    public List<LivreDTO> rechercherLivresParAnnee(int annee) {
+        return livreDAO.rechercherParAnnee(annee).stream()
+                .map(LivreDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+
 
 }

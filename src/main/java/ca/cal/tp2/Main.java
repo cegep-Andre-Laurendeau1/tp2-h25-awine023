@@ -36,8 +36,8 @@ public class Main {
             System.out.println("=== 📚 Initialisation de la bibliothèque ===");
 
             // 📌 1. Ajouter des livres
-            LivreDTO livre1 = bibliothequeService.ajouterLivre("Le Petit Prince", "Antoine de Saint-Exupéry", "123-ABC", 150, 3);
-            LivreDTO livre2 = bibliothequeService.ajouterLivre("1984", "George Orwell", "456-DEF", 328, 2);
+            LivreDTO livre1 = bibliothequeService.ajouterLivre("Le Petit Prince", "Antoine de Saint-Exupéry", "123-ABC", 150, 3, "Gallimard");
+            LivreDTO livre2 = bibliothequeService.ajouterLivre("1984", "George Orwell", "456-DEF", 328, 2, "Seuil");
             System.out.println("📖 Livres ajoutés :\n" + livre1 + "\n" + livre2);
 
             // 📌 2. Ajouter un CD
@@ -92,7 +92,17 @@ public class Main {
                 amendes.forEach(System.out::println);
             }
 
-            // 📌 12. 🔥 TEST : Emprunter un document avec des ID inexistants !
+            // 📌 12. 🔍 Recherche de livres par titre ou auteur
+            System.out.println("\n🔍 Recherche de livres contenant 'Prince' ou 'Saint-Exupéry' :");
+            List<LivreDTO> resultatsTitreAuteur = bibliothequeService.rechercherLivresParTitreOuAuteur("Prince");
+            resultatsTitreAuteur.forEach(System.out::println);
+
+            // 📌 13. 📅 Recherche de livres par année de publication
+            System.out.println("\n📅 Recherche de livres publiés en 2016 :");
+            List<LivreDTO> resultatsAnnee = bibliothequeService.rechercherLivresParAnnee(2016);
+            resultatsAnnee.forEach(System.out::println);
+
+            // 📌 14. 🔥 TEST : Emprunter un document avec des ID inexistants !
             try {
                 bibliothequeService.emprunterDocument(999L, 888L, new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000));
             } catch (Exception e) {
