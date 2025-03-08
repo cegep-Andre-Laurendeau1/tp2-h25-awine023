@@ -40,42 +40,33 @@ public class Main {
             LivreDTO livre2 = bibliothequeService.ajouterLivre("1984", "George Orwell", "456-DEF", 328, 2, "Seuil");
             System.out.println("📖 Livres ajoutés :\n" + livre1 + "\n" + livre2);
 
-            // 📌 2. Ajouter un CD
-            CDDTO cd1 = bibliothequeService.ajouterCD("CD1", "Auteur1", 50, "Genre1", 3);
-            System.out.println("\n🎵 CD ajouté : " + cd1);
+            // 📌 2. Ajouter un DVD
+            DVDDTO dvd1 = bibliothequeService.ajouterDVD("Inception", "Christopher Nolan", 148, "PG-13");
+            System.out.println("\n📀 DVD ajouté : " + dvd1);
 
             // 📌 3. Ajouter un emprunteur
             EmprunteurDTO emprunteur1 = bibliothequeService.ajouterEmprunteur("Alice Dupont", "alice@example.com", "555-1234");
             System.out.println("\n👤 Emprunteur ajouté : " + emprunteur1);
 
-            // 📌 4. Ajouter un autre emprunteur (qui emprunte un CD)
-            EmprunteurDTO emprunteur2 = bibliothequeService.ajouterEmprunteur("Bob Martin", "mail@gmail.com", "555-1234");
-            System.out.println("\n👤 Emprunteur ajouté : " + emprunteur2);
-
-            // 📌 5. Ajouter un préposé
+            // 📌 4. Ajouter un préposé
             PreposeDTO prepose1 = bibliothequeService.ajouterPrepose("Jean Martin", "jean.martin@example.com", "555-5678");
             System.out.println("\n👨‍💼 Préposé ajouté : " + prepose1);
 
-            // 📌 6. Lister les livres disponibles
+            // 📌 5. Lister les livres disponibles
             List<LivreDTO> livres = bibliothequeService.listerLivres();
             System.out.println("\n📚 Liste des livres disponibles : ");
             livres.forEach(System.out::println);
 
-            // 📌 7. Emprunter un document
+            // 📌 6. Emprunter un document
             EmpruntDTO emprunt = bibliothequeService.emprunterDocument(emprunteur1.id(), livre1.id(), new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000));
             System.out.println("\n📌 Document emprunté : " + emprunt);
 
-            // 📌 8. Emprunter un CD
-            EmpruntDTO empruntCD = bibliothequeService.emprunterDocument(emprunteur2.id(), cd1.id(), new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000));
-            System.out.println("\n📌 CD emprunté : " + empruntCD);
-
-            // 📌 9. Lister les emprunts
+            // 📌 7. Lister les emprunts
             List<EmpruntDTO> emprunts = bibliothequeService.listerEmprunts();
             System.out.println("\n📋 Liste des emprunts : ");
             emprunts.forEach(System.out::println);
 
-            // 📌 10. Retourner un document (simulons un retour en retard)
-            Thread.sleep(2000); // Simule un délai
+            // 📌 8. Retourner un document
             if (emprunt.details() != null && !emprunt.details().isEmpty()) {
                 bibliothequeService.retournerDocument(emprunt.details().get(0).id());
                 System.out.println("\n📌 Document retourné !");
@@ -83,7 +74,7 @@ public class Main {
                 System.out.println("\n⚠️ Aucun document à retourner.");
             }
 
-            // 📌 11. Lister les amendes impayées
+            // 📌 9. Lister les amendes impayées
             List<AmendeDTO> amendes = bibliothequeService.listerAmendesNonPayees();
             System.out.println("\n💰 Liste des amendes impayées : ");
             if (amendes.isEmpty()) {
@@ -92,26 +83,23 @@ public class Main {
                 amendes.forEach(System.out::println);
             }
 
-            // 📌 12. 🔍 Recherche de livres par titre ou auteur
+            // 📌 10. 🔍 Recherche de livres par titre ou auteur
             System.out.println("\n🔍 Recherche de livres contenant 'Prince' ou 'Saint-Exupéry' :");
             List<LivreDTO> resultatsTitreAuteur = bibliothequeService.rechercherLivresParTitreOuAuteur("Prince");
             resultatsTitreAuteur.forEach(System.out::println);
 
-            // 📌 13. 📅 Recherche de livres par année de publication
-            System.out.println("\n📅 Recherche de livres publiés en 2016 :");
-            List<LivreDTO> resultatsAnnee = bibliothequeService.rechercherLivresParAnnee(2016);
-            resultatsAnnee.forEach(System.out::println);
+            // 📌 11. 🔍 Recherche de DVD par réalisateur
+            System.out.println("\n🔍 Recherche de DVD réalisés par 'Nolan' :");
+            List<DVDDTO> resultatsRealisateur = bibliothequeService.rechercherDVDParTitreOuRealisateur("Nolan");
+            resultatsRealisateur.forEach(System.out::println);
 
-            // 📌 14. 🔥 TEST : Emprunter un document avec des ID inexistants !
+            // 📌 12. 🔥 TEST : Emprunter un document avec des ID inexistants !
             try {
                 bibliothequeService.emprunterDocument(999L, 888L, new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000));
             } catch (Exception e) {
                 System.err.println("❌ Erreur (ID inexistant) : " + e.getMessage());
             }
 
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            System.err.println("⚠️ Erreur d'interruption : " + e.getMessage());
         } catch (Exception e) {
             System.err.println("❌ Une erreur est survenue : " + e.getMessage());
             e.printStackTrace();

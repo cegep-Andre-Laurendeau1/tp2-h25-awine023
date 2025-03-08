@@ -232,5 +232,31 @@ public class BibliothequeService {
     }
 
 
+    public DVDDTO ajouterDVD(String titre, String director, int duree, String rating) {
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+        try {
+            DVD dvd = new DVD();
+            dvd.setTitre(titre);
+            dvd.setDirector(director);
+            dvd.setDuree(duree);
+            dvd.setRating(rating);
+            dvdDAO.save(dvd);
+            tx.commit();
+            return new DVDDTO(dvd.getDocumentID(), titre, director, duree, rating);
+        } catch (Exception e) {
+            tx.rollback();
+            throw new RuntimeException("Erreur lors de l'ajout du DVD : " + e.getMessage());
+        }
+    }
+
+    public List<DVDDTO> rechercherDVDParTitreOuRealisateur(String critere) {
+        return dvdDAO.rechercherParTitreOuRealisateur(critere).stream()
+                .map(dvd -> new DVDDTO(dvd.getDocumentID(), dvd.getTitre(), dvd.getDirector(), dvd.getDuree(), dvd.getRating())) // ✅ Correction ici
+                .collect(Collectors.toList());
+    }
+
+
+
 
 }
