@@ -256,6 +256,11 @@ public class BibliothequeService {
                 .collect(Collectors.toList());
     }
 
+    public List<CDDTO> rechercherCDParTitreOuArtiste(String critere) {
+        return cdDAO.rechercherParTitreOuArtiste(critere).stream()
+                .map(cd -> new CDDTO(cd.getDocumentID(), cd.getTitre(), cd.getArtiste(), cd.getDuree(), cd.getGenre()))
+                .collect(Collectors.toList());
+    }
 
 
 

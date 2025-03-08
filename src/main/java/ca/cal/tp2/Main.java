@@ -44,6 +44,10 @@ public class Main {
             DVDDTO dvd1 = bibliothequeService.ajouterDVD("Inception", "Christopher Nolan", 148, "PG-13");
             System.out.println("\n📀 DVD ajouté : " + dvd1);
 
+            // 📌 Ajouter un CD
+            CDDTO cd1 = bibliothequeService.ajouterCD("Thriller", "Michael Jackson", 42, "Pop", 5);
+            System.out.println("\n🎵 CD ajouté : " + cd1);
+
             // 📌 3. Ajouter un emprunteur
             EmprunteurDTO emprunteur1 = bibliothequeService.ajouterEmprunteur("Alice Dupont", "alice@example.com", "555-1234");
             System.out.println("\n👤 Emprunteur ajouté : " + emprunteur1);
@@ -92,6 +96,11 @@ public class Main {
             System.out.println("\n🔍 Recherche de DVD réalisés par 'Nolan' :");
             List<DVDDTO> resultatsRealisateur = bibliothequeService.rechercherDVDParTitreOuRealisateur("Nolan");
             resultatsRealisateur.forEach(System.out::println);
+
+            // 📌 Recherche d'un CD par titre ou artiste
+            System.out.println("\n🔍 Recherche de CD contenant 'Michael' :");
+            List<CDDTO> resultatsCD = bibliothequeService.rechercherCDParTitreOuArtiste("Michael");
+            resultatsCD.forEach(System.out::println);
 
             // 📌 12. 🔥 TEST : Emprunter un document avec des ID inexistants !
             try {
