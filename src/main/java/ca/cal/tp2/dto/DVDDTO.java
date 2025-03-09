@@ -1,7 +1,17 @@
 package ca.cal.tp2.dto;
 
-import lombok.Builder;
+import ca.cal.tp2.model.DVD;
 
-@Builder
-public record DVDDTO(Long id, String titre, String director, int duree, String rating) {
+public record DVDDTO(Long id, String titre, String directeur, int duree, String rating, int nombreExemplaires) {
+
+    public static DVDDTO fromEntity(DVD dvd) {
+        return new DVDDTO(
+                dvd.getDocumentID(),
+                dvd.getTitre(),
+                dvd.getDirecteur(),
+                dvd.getDuree(),
+                dvd.getRating(),
+                dvd.getNombreExemplaires()
+        );
+    }
 }

@@ -3,272 +3,185 @@ package ca.cal.tp2.service;
 import ca.cal.tp2.dao.*;
 import ca.cal.tp2.dto.*;
 import ca.cal.tp2.model.*;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
+
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class BibliothequeService {
-    private final LivreDAO livreDAO;
-    private final CDDAO cdDAO;
-    private final DVDDAO dvdDAO;
+    private final DocumentDAO documentDAO;
     private final EmpruntDAO empruntDAO;
-    private final EmpruntDetailDAO empruntDetailDAO;
-    private final AmendeDAO amendeDAO;
     private final UtilisateurDAO utilisateurDAO;
-    private final EntityManager em;
 
-    public BibliothequeService(EntityManager em) {
-        this.em = em;
-        this.livreDAO = new LivreDAO(em);
-        this.cdDAO = new CDDAO(em);
-        this.dvdDAO = new DVDDAO(em);
-        this.empruntDAO = new EmpruntDAO(em);
-        this.empruntDetailDAO = new EmpruntDetailDAO(em);
-        this.amendeDAO = new AmendeDAO(em);
-        this.utilisateurDAO = new UtilisateurDAO(em);
+    public BibliothequeService(DocumentDAO documentDAO, EmpruntDAO empruntDAO, UtilisateurDAO utilisateurDAO) {
+        this.documentDAO = documentDAO;
+        this.empruntDAO = empruntDAO;
+        this.utilisateurDAO = utilisateurDAO;
     }
 
-    public LivreDTO ajouterLivre(String titre, String auteur, String ISBN, int nombrePages, int nbExemplaires, String editeur) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        try {
-            Livre livre = new Livre();
-            livre.setTitre(titre);
-            livre.setAuteur(auteur);
-            livre.setISBN(ISBN);
-            livre.setNombrePages(nombrePages);
-            livre.setNombreExemplaires(nbExemplaires);
-            livre.setEditeur(editeur);
-            livreDAO.save(livre);
-            tx.commit();
-            return LivreDTO.fromEntity(livre);
-        } catch (Exception e) {
-            tx.rollback();
-            throw new RuntimeException("Erreur lors de l'ajout du livre : " + e.getMessage());
+    public LivreDTO ajouterLivre(LivreDTO livreDTO) {
+        Livre livre = new Livre(
+                livreDTO.titre(),
+                livreDTO.auteur(),
+                livreDTO.ISBN(),
+                livreDTO.nombrePages(),
+                livreDTO.nombreExemplaires(),
+                livreDTO.editeur(),
+                livreDTO.datePublication()
+        );
+
+        documentDAO.ajouterLivre(livre);
+        return LivreDTO.fromEntity(livre);
+    }
+
+    public CDDTO ajouterCD(CDDTO cdDTO) {
+        CD cd = new CD(
+                cdDTO.titre(),
+                cdDTO.artiste(),
+                cdDTO.duree(),
+                cdDTO.genre(),
+                cdDTO.nombreExemplaires()
+        );
+        documentDAO.ajouterCD(cd);
+        return CDDTO.fromEntity(cd);
+    }
+
+    public DVDDTO ajouterDVD(DVDDTO dvdDTO) {
+        DVD dvd = new DVD(
+                dvdDTO.titre(),
+                dvdDTO.nombreExemplaires(),
+                dvdDTO.directeur(),
+                dvdDTO.duree(),
+                dvdDTO.rating()
+        );
+        documentDAO.ajouterDVD(dvd);
+        return DVDDTO.fromEntity(dvd);
+    }
+
+    public EmprunteurDTO ajouterEmprunteur(EmprunteurDTO emprunteurDTO) {
+        Emprunteur emprunteur = new Emprunteur(
+                emprunteurDTO.name(),
+                emprunteurDTO.email(),
+                emprunteurDTO.phoneNumber()
+        );
+        utilisateurDAO.ajouterEmprunteur(emprunteur);
+        return EmprunteurDTO.fromEntity(emprunteur);
+    }
+
+    public PreposeDTO ajouterPrepose(PreposeDTO preposeDTO) {
+        Prepose prepose = new Prepose(
+                preposeDTO.name(),
+                preposeDTO.email(),
+                preposeDTO.phoneNumber()
+        );
+        utilisateurDAO.ajouterPrepose(prepose);
+        return PreposeDTO.fromEntity(prepose);
+    }
+
+    public List<DocumentDTO> getAllDocuments() {
+        return documentDAO.findAll().stream()
+                .map(DocumentDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public List<EmprunteurDTO> getAllEmprunteurs() {
+        return utilisateurDAO.getEmprunteurs().stream()
+                .map(EmprunteurDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    public EmpruntDTO emprunterDocument(long emprunteurId, long documentId) {
+        Emprunteur emprunteur = utilisateurDAO.getEmprunteurById(emprunteurId);
+        Document document = documentDAO.findById(documentId);
+
+        if (emprunteur == null) {
+            throw new RuntimeException("Emprunteur introuvable !");
         }
-    }
-
-    public EmprunteurDTO ajouterEmprunteur(String name, String email, String phoneNumber) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        try {
-            Emprunteur emprunteur = new Emprunteur(name, email, phoneNumber);
-            em.persist(emprunteur);
-            tx.commit();
-            return EmprunteurDTO.fromEntity(emprunteur);
-        } catch (Exception e) {
-            tx.rollback();
-            throw new RuntimeException("Erreur lors de l'ajout de l'emprunteur : " + e.getMessage());
+        if (document == null || document.getNombreExemplaires() <= 0) {
+            throw new RuntimeException("Document indisponible !");
         }
-    }
 
-    public PreposeDTO ajouterPrepose(String name, String email, String phoneNumber) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        try {
-            Prepose prepose = new Prepose(name, email, phoneNumber);
-            em.persist(prepose);
-            tx.commit();
-            return PreposeDTO.fromEntity(prepose); // ✅ Correction ici
-        } catch (Exception e) {
-            tx.rollback();
-            throw new RuntimeException("Erreur lors de l'ajout du préposé : " + e.getMessage());
-        }
+        Emprunt emprunt = empruntDAO.creerEmprunt(emprunteur, new Date());
+        EmpruntDetail detail = empruntDAO.ajouterDocumentAEmprunt(emprunt, document, new Date());
+
+        return new EmpruntDTO(
+                emprunt.getBorrowID(),
+                emprunt.getDateEmprunt(),
+                emprunt.getStatus(),
+                EmprunteurDTO.fromEntity(emprunteur),
+                List.of(EmpruntDetailDTO.fromEntity(detail))
+        );
     }
 
 
-    public EmpruntDTO emprunterDocument(Long emprunteurId, Long documentId, Date dateRetourPrevue) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        try {
-            Emprunteur emprunteur = em.find(Emprunteur.class, emprunteurId);
-            Document document = em.find(Document.class, documentId);
+    public List<EmpruntDTO> getEmpruntsParEmprunteur(long emprunteurId) {
+        return EmParentDAO.executeInTransaction(em -> {
+            List<Emprunt> emprunts = em.createQuery(
+                            "SELECT e FROM Emprunt e LEFT JOIN FETCH e.empruntDetails WHERE e.emprunteur.id = :emprunteurId",
+                            Emprunt.class)
+                    .setParameter("emprunteurId", emprunteurId)
+                    .getResultList();
 
-            if (emprunteur == null || document == null) {
-                tx.rollback();
-                throw new RuntimeException("Emprunt impossible : Emprunteur ou document introuvable.");
-            }
-
-            if (document.getNombreExemplaires() <= 0) {
-                tx.rollback();
-                throw new RuntimeException("Emprunt impossible : Plus d'exemplaires disponibles.");
-            }
-
-            Emprunt emprunt = new Emprunt();
-            emprunt.setDateEmprunt(new Date());
-            emprunt.setStatus("En cours");
-            emprunt.setEmprunteur(emprunteur);
-            empruntDAO.save(emprunt);
-
-            EmpruntDetail detail = new EmpruntDetail();
-            detail.setEmprunt(emprunt);
-            detail.setDocument(document);
-            detail.setDateRetourPrevue(dateRetourPrevue);
-            detail.setStatus("Non retourné");
-            empruntDetailDAO.save(detail);
-
-            tx.commit();
-            return EmpruntDTO.builder()
-                    .id(emprunt.getBorrowID())
-                    .dateEmprunt(emprunt.getDateEmprunt())
-                    .status(emprunt.getStatus())
-                    .emprunteur(EmprunteurDTO.fromEntity(emprunteur))
-                    .details(List.of(EmpruntDetailDTO.fromEntity(detail)))
-                    .build();
-        } catch (Exception e) {
-            tx.rollback();
-            throw new RuntimeException("Erreur lors de l'emprunt : " + e.getMessage());
-        }
+            return emprunts.stream()
+                    .map(emprunt -> new EmpruntDTO(
+                            emprunt.getBorrowID(),
+                            emprunt.getDateEmprunt(),
+                            emprunt.getStatus(),
+                            EmprunteurDTO.fromEntity(emprunt.getEmprunteur()),
+                            emprunt.getEmpruntDetails().stream()
+                                    .map(EmpruntDetailDTO::fromEntity)
+                                    .collect(Collectors.toList())
+                    ))
+                    .collect(Collectors.toList());
+        });
     }
 
-    public void retournerDocument(Long empruntDetailId) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        try {
+
+    public boolean retournerDocument(long empruntDetailId) {
+        return EmParentDAO.executeInTransaction(em -> {
             EmpruntDetail detail = em.find(EmpruntDetail.class, empruntDetailId);
-
             if (detail == null) {
-                tx.rollback();
-                throw new RuntimeException("Retour impossible : Détail de l'emprunt introuvable.");
+                throw new RuntimeException("EmpruntDetail introuvable !");
             }
 
             detail.setDateRetourActuelle(new Date());
-            detail.setStatus("Retourné");
+            detail.setStatus("RETORNE");
             em.merge(detail);
-
-            Document document = detail.getDocument();
-            document.setNombreExemplaires(document.getNombreExemplaires() + 1);
-            em.merge(document);
 
             Emprunt emprunt = detail.getEmprunt();
             boolean tousRetournes = emprunt.getEmpruntDetails().stream()
-                    .allMatch(d -> d.getStatus().equals("Retourné"));
+                    .allMatch(d -> "RETORNE".equals(d.getStatus()));
 
             if (tousRetournes) {
-                emprunt.setStatus("Terminé");
+                emprunt.setStatus("RETORNE");
                 em.merge(emprunt);
             }
 
-            tx.commit();
-        } catch (Exception e) {
-            tx.rollback();
-            throw new RuntimeException("Erreur lors du retour du document : " + e.getMessage());
-        }
+            return true;
+        });
     }
 
-
-    public List<EmpruntDTO> listerEmprunts() {
-        return empruntDAO.findAll().stream()
-                .map(emprunt -> EmpruntDTO.builder()
-                        .id(emprunt.getBorrowID())
-                        .dateEmprunt(emprunt.getDateEmprunt())
-                        .status(emprunt.getStatus())
-                        .emprunteur(convertirEnEmprunteurDTO(emprunt.getEmprunteur()))
-                        .details(emprunt.getEmpruntDetails().stream()
-                                .map(EmpruntDetailDTO::fromEntity)
-                                .collect(Collectors.toList()))
-                        .build())
+    public List<DocumentDTO> rechercherParTitre(String titre) {
+        return documentDAO.rechercherParTitre(titre).stream()
+                .map(DocumentDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
-
-    private EmprunteurDTO convertirEnEmprunteurDTO(Utilisateur utilisateur) {
-        if (utilisateur instanceof Emprunteur emprunteur) {
-            return EmprunteurDTO.fromEntity(emprunteur); // ✅ Convertir en DTO d'emprunteur
-        } else {
-            throw new RuntimeException("L'utilisateur associé à l'emprunt n'est pas un emprunteur !");
-        }
-    }
-
-
-
-    public List<AmendeDTO> listerAmendesNonPayees() {
-        return amendeDAO.findAll().stream()
-                .filter(amende -> !amende.isStatus())
-                .map(AmendeDTO::fromEntity)
-                .collect(Collectors.toList());
-    }
-
-    public List<LivreDTO> listerLivres() {
-        return livreDAO.findAll().stream()
+    public List<LivreDTO> rechercherLivresParAuteur(String auteur) {
+        return documentDAO.rechercherLivresParAuteur(auteur).stream()
                 .map(LivreDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
-
-    public CDDTO ajouterCD(String titre, String artiste, int duree, String genre, int nbExemplaires) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        try {
-            CD cd = new CD();
-            cd.setTitre(titre);
-            cd.setArtiste(artiste);
-            cd.setDuree(duree);
-            cd.setGenre(genre);
-            cd.setNombreExemplaires(nbExemplaires);
-            cdDAO.save(cd);
-            tx.commit();
-            return new CDDTO(cd.getDocumentID(), titre, artiste, duree, genre);
-        } catch (Exception e) {
-            tx.rollback();
-            throw new RuntimeException("Erreur lors de l'ajout du CD : " + e.getMessage());
-        }
-    }
-
-
-    public List<LivreDTO> rechercherLivresParTitreOuAuteur(String critere) {
-        return livreDAO.rechercherParTitreOuAuteur(critere).stream()
-                .map(LivreDTO::fromEntity)
+    public List<CDDTO> rechercherCDsParArtiste(String artiste) {
+        return documentDAO.rechercherCDsParArtiste(artiste).stream()
+                .map(CDDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
-
-    public List<LivreDTO> rechercherLivresParAnnee(int annee) {
-        return livreDAO.rechercherParAnnee(annee).stream()
-                .map(LivreDTO::fromEntity)
+    public List<DVDDTO> rechercherDVDsParDirecteur(String directeur) {
+        return documentDAO.rechercherDVDsParDirecteur(directeur).stream()
+                .map(DVDDTO::fromEntity)
                 .collect(Collectors.toList());
     }
-
-
-    public DVDDTO ajouterDVD(String titre, String director, int duree, String rating) {
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        try {
-            DVD dvd = new DVD();
-            dvd.setTitre(titre);
-            dvd.setDirector(director);
-            dvd.setDuree(duree);
-            dvd.setRating(rating);
-            dvdDAO.save(dvd);
-            tx.commit();
-            return new DVDDTO(dvd.getDocumentID(), titre, director, duree, rating);
-        } catch (Exception e) {
-            tx.rollback();
-            throw new RuntimeException("Erreur lors de l'ajout du DVD : " + e.getMessage());
-        }
-    }
-
-    public List<DVDDTO> rechercherDVDParTitreOuRealisateur(String critere) {
-        return dvdDAO.rechercherParTitreOuRealisateur(critere).stream()
-                .map(dvd -> new DVDDTO(dvd.getDocumentID(), dvd.getTitre(), dvd.getDirector(), dvd.getDuree(), dvd.getRating())) // ✅ Correction ici
-                .collect(Collectors.toList());
-    }
-
-    public List<CDDTO> rechercherCDParTitreOuArtiste(String critere) {
-        return cdDAO.rechercherParTitreOuArtiste(critere).stream()
-                .map(cd -> new CDDTO(cd.getDocumentID(), cd.getTitre(), cd.getArtiste(), cd.getDuree(), cd.getGenre()))
-                .collect(Collectors.toList());
-    }
-
-    public List<EmpruntDetailDTO> obtenirDatesRetourParEmprunteur(Long emprunteurId) {
-        List<EmpruntDetail> emprunts = empruntDetailDAO.findByEmpruntId(emprunteurId);
-        return emprunts.stream()
-                .map(EmpruntDetailDTO::fromEntity)
-                .collect(Collectors.toList());
-    }
-
-
-
 }

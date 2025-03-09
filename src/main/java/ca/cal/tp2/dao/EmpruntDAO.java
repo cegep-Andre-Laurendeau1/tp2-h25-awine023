@@ -1,29 +1,19 @@
 package ca.cal.tp2.dao;
 
 import ca.cal.tp2.model.Emprunt;
-import jakarta.persistence.EntityManager;
+import ca.cal.tp2.model.EmpruntDetail;
+import ca.cal.tp2.model.Document;
+import ca.cal.tp2.model.Emprunteur;
+import java.util.Date;
 import java.util.List;
 
-public class EmpruntDAO {
-    private final EntityManager em;
-
-    public EmpruntDAO(EntityManager em) {
-        this.em = em;
-    }
-
-    public void save(Emprunt emprunt) {
-        em.persist(emprunt);
-    }
-
-    public Emprunt findById(Long id) {
-        return em.find(Emprunt.class, id);
-    }
-
-    public List<Emprunt> findAll() {
-        return em.createQuery("SELECT e FROM Emprunt e", Emprunt.class).getResultList();
-    }
-
-    public void delete(Emprunt emprunt) {
-        em.remove(emprunt);
-    }
+public interface EmpruntDAO {
+    List<Emprunt> getEmprunts();
+    Emprunt creerEmprunt(Emprunteur emprunteur, Date dateEmprunt);
+    EmpruntDetail ajouterDocumentAEmprunt(Emprunt emprunt, Document document, Date dateRetourPrevue);
+    List<Emprunt> getEmpruntsParEmprunteur(long emprunteurId);
+    Emprunt getEmpruntById(long empruntId);
+    List<EmpruntDetail> getDetailsEmprunt(long empruntId);
+    boolean enregistrerRetour(long empruntDetailId, Date dateRetourActuelle);
+    boolean updateStatutEmprunt(long empruntId, String nouveauStatut);
 }

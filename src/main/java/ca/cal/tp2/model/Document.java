@@ -2,8 +2,10 @@ package ca.cal.tp2.model;
 
 import lombok.*;
 import jakarta.persistence.*;
+import lombok.experimental.SuperBuilder;
 
 @Entity
+@SuperBuilder
 @Inheritance(strategy = InheritanceType.JOINED)
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @ToString
 public abstract class Document {

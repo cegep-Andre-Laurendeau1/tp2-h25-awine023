@@ -2,11 +2,18 @@ package ca.cal.tp2.model;
 
 import lombok.*;
 import jakarta.persistence.*;
+import lombok.experimental.SuperBuilder;
+
 import java.util.Date;
 
 @Entity
 @Table(name = "livre")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @ToString(callSuper = true)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString(callSuper = true)
+@SuperBuilder
 public class Livre extends Document {
 
     @Column(nullable = false)
@@ -24,7 +31,7 @@ public class Livre extends Document {
     @Temporal(TemporalType.DATE)
     private Date datePublication;
 
-    public Livre(String titre, int nombreExemplaires, String ISBN, String auteur, String editeur, int nombrePages, Date datePublication) {
+    public Livre(String titre, String auteur, String ISBN, int nombrePages, int nombreExemplaires, String editeur, Date datePublication) {
         super(titre, nombreExemplaires);
         this.ISBN = ISBN;
         this.auteur = auteur;

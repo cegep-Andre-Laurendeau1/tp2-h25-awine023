@@ -1,11 +1,13 @@
 package ca.cal.tp2.dto;
 
 import ca.cal.tp2.model.Utilisateur;
-import lombok.Builder;
 
-@Builder
-public record PreposeDTO(Long id, String name, String email, String phoneNumber) {
-
+public record PreposeDTO(
+        Long id,
+        String name,
+        String email,
+        String phoneNumber
+) {
     public static PreposeDTO fromEntity(Utilisateur utilisateur) {
         if (!"PREPOSE".equals(utilisateur.getTypeUtilisateur())) {
             throw new IllegalArgumentException("L'utilisateur n'est pas un préposé.");
@@ -20,6 +22,9 @@ public record PreposeDTO(Long id, String name, String email, String phoneNumber)
 
     @Override
     public String toString() {
-        return "PreposeDTO[id=" + id + ", name=" + name + ", email=" + email + ", phoneNumber=" + phoneNumber + "]";
+        return "PreposeDTO[id=" + id +
+                ", name=" + name +
+                ", email=" + email +
+                ", phoneNumber=" + phoneNumber + "]";
     }
 }
