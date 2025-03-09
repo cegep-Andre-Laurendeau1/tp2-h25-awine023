@@ -262,6 +262,13 @@ public class BibliothequeService {
                 .collect(Collectors.toList());
     }
 
+    public List<EmpruntDetailDTO> obtenirDatesRetourParEmprunteur(Long emprunteurId) {
+        List<EmpruntDetail> emprunts = empruntDetailDAO.findByEmpruntId(emprunteurId);
+        return emprunts.stream()
+                .map(EmpruntDetailDTO::fromEntity)
+                .collect(Collectors.toList());
+    }
+
 
 
 }

@@ -102,6 +102,12 @@ public class Main {
             List<CDDTO> resultatsCD = bibliothequeService.rechercherCDParTitreOuArtiste("Michael");
             resultatsCD.forEach(System.out::println);
 
+            // 📌 Récupérer les dates de retour des emprunts d'un emprunteur
+            System.out.println("\n📅 Dates de retour des emprunts pour " + emprunteur1.name() + " :");
+            List<EmpruntDetailDTO> datesRetour = bibliothequeService.obtenirDatesRetourParEmprunteur(emprunteur1.id());
+            datesRetour.forEach(ed -> System.out.println("📅 Retour prévu : " + ed.dateRetourPrevue()));
+
+
             // 📌 12. 🔥 TEST : Emprunter un document avec des ID inexistants !
             try {
                 bibliothequeService.emprunterDocument(999L, 888L, new Date(System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000));

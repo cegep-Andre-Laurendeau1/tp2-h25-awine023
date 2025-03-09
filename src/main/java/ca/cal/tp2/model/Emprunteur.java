@@ -14,7 +14,7 @@ public class Emprunteur extends Utilisateur {
 
     public Emprunteur() {
         super();
-        this.setTypeUtilisateur("Emprunteur"); // ✅ Définit automatiquement le type
+        this.setTypeUtilisateur("Emprunteur");
     }
 
     public Emprunteur(String name, String email, String phoneNumber) {
